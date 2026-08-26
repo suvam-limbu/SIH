@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentryl — See what's hiding in your inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e14;
+    --bg-alt: #0d1320;
+    --panel: #111826;
+    --panel-2: #0d1420;
+    --border: rgba(231,238,245,0.09);
+    --border-strong: rgba(231,238,245,0.16);
+    --text: #e7eef5;
+    --muted: #94a3b5;
+    --muted-dim: #64748a;
+    --cyan: #3fe8d4;
+    --cyan-dim: rgba(63,232,212,0.14);
+    --violet: #b77cf5;
+    --violet-dim: rgba(183,124,245,0.14);
+    --danger: #ff5c6c;
+    --danger-dim: rgba(255,92,108,0.14);
+    --radius: 14px;
+    --container: 1160px;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,h2,h3{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .mono{ font-family: 'JetBrains Mono', monospace; }
+
+  a{ color: inherit; text-decoration: none; }
+  img{ max-width:100%; display:block; }
+
+  ::selection{ background: var(--cyan-dim); color: var(--cyan); }
+
+  :focus-visible{
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .container{
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  section{ position: relative; padding: 120px 0; }
+  @media (max-width: 720px){ section{ padding: 80px 0; } }
+
+  /* ---------- background atmosphere ---------- */
+  .grid-glow{
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(600px 400px at 15% 8%, rgba(63,232,212,0.08), transparent 60%),
+      radial-gradient(600px 500px at 90% 30%, rgba(183,124,245,0.07), transparent 60%),
+      linear-gradient(var(--bg), var(--bg));
+    background-color: var(--bg);
+  }
+  .grid-glow::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(231,238,245,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(231,238,245,0.035) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 90%);
+  }
+
+  /* ---------- nav ---------- */
+  header{
+    position: sticky; top:0; z-index: 50;
+    background: rgba(10,14,20,0.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    height: 74px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:600; font-size:1.15rem; }
+  .brand svg{ width:26px; height:26px; }
+  .nav-links{ display:flex; gap:34px; }
+  .nav-links a{
+    font-size: 0.92rem; color: var(--muted); transition: color .2s ease;
+  }
+  .nav-links a:hover{ color: var(--text); }
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:8px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    cursor:pointer;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .nav-cta:hover{ border-color: var(--cyan); background: var(--cyan-dim); }
+  .nav-mobile-hide{ display:flex; }
+  @media (max-width: 780px){ .nav-mobile-hide{ display:none; } }
+
+  /* ---------- eyebrow ---------- */
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{
+    content:""; width:16px; height:1px; background: var(--cyan);
+  }
+
+  /* ---------- hero ---------- */
+  .hero{ padding-top: 96px; padding-bottom: 100px; }
+  .hero-grid{
+    display:grid; grid-template-columns: 1.05fr 1fr; gap: 64px; align-items:center;
+  }
+  @media (max-width: 900px){ .hero-grid{ grid-template-columns: 1fr; gap: 56px; } }
+
+  .hero h1{
+    font-size: clamp(2.1rem, 4vw, 3.15rem);
+    line-height: 1.12;
+  }
+  .hero h1 .accent{ color: var(--cyan); }
+  .hero p.lead{
+    color: var(--muted);
+    font-size: 1.08rem;
+    max-width: 46ch;
+    margin-top: 22px;
+  }
+  .hero-actions{ display:flex; align-items:center; gap: 22px; margin-top: 34px; flex-wrap: wrap; }
+
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:10px;
+    background: linear-gradient(135deg, var(--cyan), #29b8a8);
+    color: #06110f;
+    font-weight: 600;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-size: 0.96rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(63,232,212,0.25), 0 12px 30px -12px rgba(63,232,212,0.55);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(63,232,212,0.4), 0 16px 36px -10px rgba(63,232,212,0.7); }
+
+  .link-more{
+    display:inline-flex; align-items:center; gap:7px;
+    color: var(--muted); font-size: 0.94rem;
+    border-bottom: 1px solid transparent;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .link-more:hover{ color: var(--text); border-color: var(--muted); }
+
+  /* ---------- mock browser / scan visual ---------- */
+  .scan-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.6);
+  }
+  .chrome-bar{
+    display:flex; align-items:center; gap:8px;
+    padding: 12px 16px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .dot{ width:9px; height:9px; border-radius:50%; background: rgba(231,238,245,0.18); }
+  .addr{
+    margin-left: 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted-dim);
+    background: var(--bg-alt);
+    padding: 5px 12px;
+    border-radius: 6px;
+    flex:1;
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  }
+
+  .email-view{
+    position: relative;
+    padding: 22px 22px 26px;
+    height: 236px;
+    overflow: hidden;
+  }
+  .email-meta{ font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+  .email-meta b{ color: var(--text); font-weight:500; }
+  .email-meta .from-domain{ color: var(--danger); }
+  .email-subject{ font-family:'Space Grotesk'; font-size: 1.02rem; margin: 12px 0 16px; }
+  .email-body-line{ height: 9px; border-radius: 4px; background: rgba(231,238,245,0.09); margin-bottom: 10px; }
+  .email-body-line.w-90{ width: 90%; }
+  .email-body-line.w-70{ width: 70%; }
+
+  .flagged-link{
+    position: relative;
+    display:flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: #c9d3e0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 9px 11px;
+    margin-top: 14px;
+    animation: flagPulse 4.5s linear infinite;
+  }
+  .flagged-link svg{ width:14px; height:14px; flex-shrink:0; opacity:.7; }
+
+  .risk-badge{
+    position:absolute;
+    top: 96px; right: 22px;
+    display:flex; align-items:center; gap:8px;
+    background: var(--danger-dim);
+    border: 1px solid rgba(255,92,108,0.4);
+    color: #ffb3ba;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    animation: badgeIn 4.5s linear infinite;
+  }
+
+  .scan-line{
+    position:absolute; left:0; right:0; top:0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    box-shadow: 0 0 14px 2px rgba(63,232,212,0.7);
+    animation: sweep 4.5s linear infinite;
+  }
+
+  @keyframes sweep{
+    0%   { transform: translateY(0);    opacity: .95; }
+    46%  { transform: translateY(206px);opacity: .95; }
+    54%  { opacity: 0; }
+    100% { opacity: 0; transform: translateY(0); }
+  }
+  @keyframes flagPulse{
+    0%, 44%  { background: transparent; border-color: transparent; }
+    50%, 82% { background: rgba(255,92,108,0.12); border-color: rgba(255,92,108,0.4); }
+    92%,100% { background: transparent; border-color: transparent; }
+  }
+  @keyframes badgeIn{
+    0%, 46%  { opacity: 0; transform: translate(8px,-4px) scale(.94); }
+    54%, 84% { opacity: 1; transform: translate(0,0) scale(1); }
+    94%,100% { opacity: 0; transform: translate(8px,-4px) scale(.94); }
+  }
+
+  /* ---------- reveal on scroll ---------- */
+  .reveal{ opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in-view{ opacity: 1; transform: translateY(0); }
+
+  /* ---------- section heads ---------- */
+  .section-head{ max-width: 640px; margin-bottom: 56px; }
+  .section-head h2{ font-size: clamp(1.6rem, 2.6vw, 2.1rem); }
+  .section-head p{ color: var(--muted); margin-top: 14px; font-size: 1.02rem; }
+
+  /* ---------- problem cards ---------- */
+  .problem-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  @media (max-width: 980px){ .problem-grid{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px){ .problem-grid{ grid-template-columns: 1fr; } }
+
+  .p-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+  }
+  .p-card .icon{ width:34px; height:34px; color: var(--danger); margin-bottom: 16px; }
+  .p-card h3{ font-size: 1rem; font-weight:600; margin-bottom:8px; }
+  .p-card p{ color: var(--muted); font-size: 0.9rem; margin:0; }
+
+  /* ---------- feature grid ---------- */
+  .feature-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 900px){ .feature-grid{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px){ .feature-grid{ grid-template-columns: 1fr; } }
+
+  .f-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 22px;
+    transition: border-color .25s ease, transform .25s ease;
+  }
+  .f-card:hover{ border-color: rgba(63,232,212,0.35); transform: translateY(-3px); }
+  .f-tag{
+    display:inline-block;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    padding: 4px 9px;
+    border-radius: 5px;
+    margin-bottom: 16px;
+  }
+  .f-card h3{ font-size: 1.06rem; margin-bottom: 8px; }
+  .f-card p{ color: var(--muted); font-size: 0.9rem; margin:0; }
+
+  /* ---------- how it works ---------- */
+  .steps{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    position: relative;
+  }
+  @media (max-width: 900px){ .steps{ grid-template-columns: 1fr; gap: 28px; } }
+
+  .step{ position: relative; padding: 0 22px 0 0; }
+  .step:not(:last-child)::after{
+    content:"";
+    position:absolute; top: 22px; right: -2px; width: calc(100% - 44px); height: 1px;
+    background: linear-gradient(90deg, var(--border-strong), transparent);
+  }
+  @media (max-width: 900px){ .step:not(:last-child)::after{ display:none; } }
+  .step-num{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--violet);
+    background: var(--violet-dim);
+    width: 44px; height: 44px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 10px;
+    margin-bottom: 18px;
+  }
+  .step h3{ font-size: 1.02rem; margin-bottom: 8px; }
+  .step p{ color: var(--muted); font-size: 0.88rem; margin: 0; padding-right: 12px; }
+
+  /* ---------- permissions ---------- */
+  .perm-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px){ .perm-grid{ grid-template-columns: 1fr; } }
+  .perm-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 26px;
+  }
+  .perm-card h3{
+    display:flex; align-items:center; gap:10px;
+    font-size: 0.95rem; font-family:'JetBrains Mono', monospace; letter-spacing:0.02em;
+    margin-bottom: 20px;
+  }
+  .perm-card.yes h3{ color: var(--cyan); }
+  .perm-card.no h3{ color: var(--danger); }
+  .perm-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:14px; }
+  .perm-list li{ display:flex; gap:12px; font-size: 0.9rem; color: var(--muted); }
+  .perm-list svg{ width:18px; height:18px; flex-shrink:0; margin-top:1px; }
+  .perm-card.yes svg{ color: var(--cyan); }
+  .perm-card.no svg{ color: var(--danger); }
+
+  /* ---------- terms ---------- */
+  .terms-panel{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 34px;
+  }
+  .terms-panel ol{ margin: 0; padding-left: 20px; color: var(--muted); font-size: 0.92rem; display:flex; flex-direction:column; gap: 12px; }
+  .terms-panel li::marker{ color: var(--cyan); font-family:'JetBrains Mono', monospace; }
+  .terms-note{
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border-strong);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted-dim);
+  }
+
+  /* ---------- availability ---------- */
+  .avail-box{
+    display:flex; align-items:center; gap: 26px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 30px 32px;
+    flex-wrap: wrap;
+  }
+  .browser-icon{ width:52px; height:52px; flex-shrink:0; }
+  .avail-box h3{ font-size: 1.08rem; margin-bottom: 6px; }
+  .avail-box p{ color: var(--muted); font-size: 0.92rem; margin:0; max-width: 60ch; }
+  .avail-box .stat{ margin-left:auto; text-align:right; }
+  @media (max-width: 640px){ .avail-box .stat{ margin-left:0; text-align:left; } }
+  .avail-box .stat b{ font-family:'Space Grotesk'; font-size: 1.6rem; color: var(--cyan); display:block; }
+  .avail-box .stat span{ font-size: 0.76rem; color: var(--muted-dim); font-family:'JetBrains Mono', monospace; }
+
+  /* ---------- final cta ---------- */
+  .cta-section{
+    text-align:center;
+    padding: 130px 0 140px;
+  }
+  .cta-section h2{ font-size: clamp(1.8rem, 3.4vw, 2.6rem); max-width: 20ch; margin: 0 auto; }
+  .cta-section p{ color: var(--muted); margin: 18px auto 34px; max-width: 46ch; }
+  .cta-note{ margin-top: 18px; font-family:'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--muted-dim); }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+  }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 16px; }
+  .footer-links{ display:flex; gap: 26px; }
+  .footer-links a{ font-size: 0.85rem; color: var(--muted); }
+  .footer-links a:hover{ color: var(--text); }
+  .footer-brand{ display:flex; align-items:center; gap:9px; color: var(--muted); font-size: 0.85rem; }
+
+  /* ---------- loader ---------- */
+  .loader{
+    position: fixed; inset: 0; z-index: 999;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg);
+    transition: opacity .6s ease, visibility .6s ease;
+  }
+  .loader.done{ opacity: 0; visibility: hidden; }
+  .loader-inner{ display:flex; flex-direction:column; align-items:center; gap:24px; }
+  .loader-mark{ width:38px; height:38px; opacity:.95; }
+  .loader-mark .mark-draw{ stroke-dasharray:100; stroke-dashoffset:100; animation: loaderDraw 1.3s ease forwards; }
+  .loader-mark .mark-fade{ opacity:0; animation: loaderFade .5s ease forwards .85s; }
+  @keyframes loaderDraw{ to{ stroke-dashoffset:0; } }
+  @keyframes loaderFade{ to{ opacity:1; } }
+  .loader-bar{ width:220px; height:1px; background: var(--border-strong); overflow:hidden; }
+  .loader-fill{ height:100%; width:0%; background: var(--cyan); box-shadow: 0 0 8px 1px rgba(63,232,212,0.6); }
+  .loader-readout{
+    font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted-dim); display:flex; gap:9px; align-items:baseline;
+  }
+  .loader-readout #loaderPct{ color: var(--cyan); min-width: 2.4ch; display:inline-block; }
+  .loader-readout .loader-label{ transition: opacity .25s ease; }
+
+  /* ---------- corner brackets ---------- */
+  .bracket{ position: relative; }
+  .bracket .corner{ position:absolute; width:9px; height:9px; opacity:.5; pointer-events:none; transition: opacity .25s ease; }
+  .bracket .corner.tl{ top:-1px; left:-1px; border-top:1px solid var(--cyan); border-left:1px solid var(--cyan); }
+  .bracket .corner.tr{ top:-1px; right:-1px; border-top:1px solid var(--cyan); border-right:1px solid var(--cyan); }
+  .bracket .corner.bl{ bottom:-1px; left:-1px; border-bottom:1px solid var(--cyan); border-left:1px solid var(--cyan); }
+  .bracket .corner.br{ bottom:-1px; right:-1px; border-bottom:1px solid var(--cyan); border-right:1px solid var(--cyan); }
+  .bracket:hover .corner{ opacity: 1; }
+
+  /* ---------- typewriter text reveal ---------- */
+  .char{ visibility: hidden; border-right: 2px solid transparent; }
+  .char.visible{ visibility: visible; }
+  .char.cursor{ border-color: var(--cyan); }
+  .char.cursor.blink{ animation: caretBlink .8s steps(1) 6 both; }
+  @keyframes caretBlink{
+    0%, 49%  { border-color: var(--cyan); }
+    50%, 100%{ border-color: transparent; }
+  }
+
+  /* ---------- flow diagram ---------- */
+  .flow-diagram{ margin-bottom: 6px; }
+  .flow-svg{ width:100%; height:76px; display:block; overflow:visible; }
+  .flow-line-bg{ stroke: var(--border-strong); stroke-width:1; }
+  .flow-line-progress{
+    stroke: var(--cyan); stroke-width:1;
+    stroke-dasharray: 960; stroke-dashoffset: 960;
+    transition: stroke-dashoffset 1.7s cubic-bezier(.16,1,.3,1);
+  }
+  .flow-diagram.in-view .flow-line-progress{ stroke-dashoffset: 0; }
+  .flow-node circle{
+    fill: var(--bg); stroke: var(--cyan); stroke-width:1.6;
+    transform-origin: center; transform-box: fill-box;
+    transform: scale(0);
+    transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+    transition-delay: calc(var(--i) * 0.2s + 0.35s);
+  }
+  .flow-diagram.in-view .flow-node circle{ transform: scale(1); }
+  .flow-pulse{ fill: var(--cyan); filter: drop-shadow(0 0 5px rgba(63,232,212,0.85)); opacity: 0; transition: opacity .4s ease .6s; }
+  .flow-diagram.in-view .flow-pulse{ opacity: 1; }
+  .flow-steps{ display:grid; grid-template-columns: repeat(4,1fr); gap: 0 22px; margin-top: 22px; }
+  @media (max-width: 900px){ .flow-steps{ grid-template-columns: 1fr; gap: 28px; } .flow-svg{ display:none; } }
+  .flow-step h3{ font-size: 1.02rem; margin-bottom: 8px; }
+  .flow-step p{ color: var(--muted); font-size: 0.88rem; margin:0; padding-right: 12px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div class="loader-inner">
+    <svg class="loader-mark" viewBox="0 0 32 32" fill="none">
+      <path class="mark-draw" d="M16 3 27 8v9c0 8-5 12.5-11 13-6-.5-11-5-11-13V8L16 3Z" stroke="#3fe8d4" stroke-width="1.6"/>
+      <path class="mark-fade" d="M9 16h14" stroke="#3fe8d4" stroke-width="1.6" opacity="0.55"/>
+      <circle class="mark-fade" cx="9" cy="16" r="1.4" fill="#3fe8d4"/>
+    </svg>
+    <div class="loader-bar"><div class="loader-fill" id="loaderFill"></div></div>
+    <div class="loader-readout mono">
+      <span id="loaderPct">00</span><span>%</span>
+      <span class="loader-label" id="loaderLabel">INITIALIZING SENTRYL</span>
+    </div>
+  </div>
+</div>
+
+<div class="grid-glow"></div>
+
+<header>
+  <div class="container nav">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M16 3 27 8v9c0 8-5 12.5-11 13-6-.5-11-5-11-13V8L16 3Z" stroke="#3fe8d4" stroke-width="1.6"/>
+        <path d="M9 16h14" stroke="#3fe8d4" stroke-width="1.6" opacity="0.55"/>
+        <circle cx="9" cy="16" r="1.4" fill="#3fe8d4"/>
+      </svg>
+      Sentryl
+    </div>
+    <nav class="nav-links nav-mobile-hide">
+      <a href="#solution">Product</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#permissions">Privacy</a>
+      <a href="#availability">Access</a>
+    </nav>
+    <a href="#cta" class="nav-cta">Get early access</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="eyebrow">AI email forensics · browser extension</div>
+        <h1 class="text-reveal" id="heroTitle">Every email hides evidence.<br>Sentryl reads it <span class="accent">before you click.</span></h1>
+        <p class="lead">Sentryl scans messages the moment they open — surfacing malicious links, spoofed senders, and unsafe IPs directly inside Gmail and Outlook, so the risk is visible before it becomes a mistake.</p>
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">
+            Add to Microsoft Edge
+          </button>
+          <a href="#how-it-works" class="link-more">See how it works ↓</a>
+        </div>
+      </div>
+
+      <div class="scan-card reveal">
+        <div class="chrome-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="addr mono">mail.google.com/mail/u/0/#inbox</span>
+        </div>
+        <div class="email-view">
+          <div class="scan-line"></div>
+          <div class="email-meta">From: <b>IT Support</b> &lt;<span class="from-domain">it-support@paypa1-secure.com</span>&gt;</div>
+          <div class="email-meta">To: you@yourcompany.com</div>
+          <div class="email-subject">Action required: verify your account within 24 hours</div>
+          <div class="email-body-line w-90"></div>
+          <div class="email-body-line w-70"></div>
+          <div class="flagged-link mono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+            Verify here → hxxp://192.168.44.12/verify-account
+          </div>
+          <div class="risk-badge">⚠ 92% risk — spoofed domain + IP link</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">The problem</div>
+        <h2 class="text-reveal">Threat hunting still runs on copy and paste</h2>
+        <p>Most people — and most investigators — check a suspicious email the same way they did five years ago: manually, one tool at a time, after the fact.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="p-card reveal bracket">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <h3>Copy-paste triage</h3>
+          <p>Investigators paste the same link or IP into four or five different lookup tools before drawing a conclusion.</p>
+        </div>
+        <div class="p-card reveal bracket">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>
+          <h3>Invisible spoofing</h3>
+          <p>Lookalike domains and forged sender headers pass a casual glance — the difference is a single swapped character.</p>
+        </div>
+        <div class="p-card reveal bracket">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 12h18M3 18h18" opacity=".4"/><path d="M8 6v12M16 6v12" stroke-dasharray="2 3"/></svg>
+          <h3>No forensic trail</h3>
+          <p>Once a phishing email is deleted, the indicators it contained usually disappear with it.</p>
+        </div>
+        <div class="p-card reveal bracket">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <h3>Reactive, not real-time</h3>
+          <p>Detection usually happens after someone has already clicked — reporting is a post-mortem, not a safeguard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTION -->
+  <section id="solution">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">What Sentryl does</div>
+        <h2 class="text-reveal">One scan. Every indicator checked.</h2>
+        <p>Sentryl runs the checks an investigator would — automatically, inline, the moment an email is opened.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="f-card reveal bracket">
+          <span class="f-tag">URL</span>
+          <h3>URL reputation</h3>
+          <p>Links are cross-checked against live threat-intelligence feeds the instant they render on screen.</p>
+        </div>
+        <div class="f-card reveal bracket">
+          <span class="f-tag">IP / HEADER</span>
+          <h3>IP &amp; header forensics</h3>
+          <p>Received-path IPs and SPF, DKIM, and DMARC results are parsed automatically from raw headers.</p>
+        </div>
+        <div class="f-card reveal bracket">
+          <span class="f-tag">DOMAIN</span>
+          <h3>Spoof detection</h3>
+          <p>Flags lookalike domains and display-name mismatches that don't match the sender's real address.</p>
+        </div>
+        <div class="f-card reveal bracket">
+          <span class="f-tag">SCORE</span>
+          <h3>Risk scoring</h3>
+          <p>Every check rolls up into one explainable score, instead of five disconnected results to interpret yourself.</p>
+        </div>
+        <div class="f-card reveal bracket">
+          <span class="f-tag">INLINE</span>
+          <h3>Inline alerts</h3>
+          <p>Warnings appear next to the email itself — no separate dashboard or tab to keep checking.</p>
+        </div>
+        <div class="f-card reveal bracket">
+          <span class="f-tag">EXPORT</span>
+          <h3>Forensic reports</h3>
+          <p>Generate a one-click summary of every indicator found, ready to hand to an investigator or IT team.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">How it works</div>
+        <h2 class="text-reveal">From inbox to verdict in under a second</h2>
+        <p>Sentryl runs entirely alongside the email client you already use — no separate app to open.</p>
+      </div>
+      <div class="flow-diagram reveal">
+        <svg class="flow-svg" viewBox="0 0 1000 80" preserveAspectRatio="none" aria-hidden="true">
+          <line class="flow-line-bg" x1="20" y1="40" x2="980" y2="40"/>
+          <line class="flow-line-progress" x1="20" y1="40" x2="980" y2="40"/>
+          <circle class="flow-pulse" r="3" cx="20" cy="40">
+            <animateMotion dur="3.4s" begin="2s" repeatCount="indefinite" path="M0,0 L960,0"/>
+          </circle>
+          <g class="flow-node" style="--i:0"><circle cx="20" cy="40" r="6"/></g>
+          <g class="flow-node" style="--i:1"><circle cx="340" cy="40" r="6"/></g>
+          <g class="flow-node" style="--i:2"><circle cx="660" cy="40" r="6"/></g>
+          <g class="flow-node" style="--i:3"><circle cx="980" cy="40" r="6"/></g>
+        </svg>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="step-num mono">01</div>
+            <h3>Read</h3>
+            <p>Sentryl parses the email's DOM and headers the moment it loads in Gmail or Outlook.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-num mono">02</div>
+            <h3>Extract</h3>
+            <p>URLs, IPs, domains, and sender fields are pulled out — nothing else is read from the message.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-num mono">03</div>
+            <h3>Check</h3>
+            <p>Each indicator is compared against threat-intelligence sources and authentication records.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-num mono">04</div>
+            <h3>Score</h3>
+            <p>A risk badge appears inline, with a full breakdown available on demand.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PERMISSIONS -->
+  <section id="permissions">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">Permissions, in plain terms</div>
+        <h2 class="text-reveal">Sentryl only sees what it needs to</h2>
+        <p>No account access, no silent data collection. Here's exactly what that means.</p>
+      </div>
+      <div class="perm-grid">
+        <div class="perm-card yes reveal bracket">
+          <h3>✓ What Sentryl reads</h3>
+          <ul class="perm-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Links, sender headers, and IPs in the email you currently have open</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Publicly available threat-intelligence data, for comparison only</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Authentication results (SPF/DKIM/DMARC) already present in the message</li>
+          </ul>
+        </div>
+        <div class="perm-card no reveal bracket">
+          <h3>✕ What Sentryl never touches</h3>
+          <ul class="perm-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Full email body content — only extracted indicators are processed, never stored</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Contacts, attachment contents, or account credentials</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Any message other than the one you currently have open</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TERMS -->
+  <section id="terms">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">Terms, short version</div>
+        <h2 class="text-reveal">The important parts, without the legal density</h2>
+      </div>
+      <div class="terms-panel reveal">
+        <ol>
+          <li>Sentryl is provided as-is during its early access period and may change as detection improves.</li>
+          <li>Threat-intelligence results depend on third-party data sources and are not guaranteed to be complete or instant.</li>
+          <li>Sentryl does not sell or share extracted indicators with anyone outside the detection pipeline described above.</li>
+          <li>Continued use of the extension is subject to future updates to these terms, which will be posted here before they take effect.</li>
+        </ol>
+        <div class="terms-note">// this is a project preview — full legal terms will be published ahead of public launch.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVAILABILITY -->
+  <section id="availability">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">Availability</div>
+        <h2 class="text-reveal">Currently built for Microsoft Edge</h2>
+      </div>
+      <div class="avail-box reveal">
+        <svg class="browser-icon" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="19" stroke="#3fe8d4" stroke-width="1.6"/>
+          <path d="M24 5c7 4 7 34 0 38M24 5c-7 4-7 34 0 38" stroke="#3fe8d4" stroke-width="1.2" opacity=".6"/>
+          <path d="M5 24h38" stroke="#3fe8d4" stroke-width="1.2" opacity=".6"/>
+        </svg>
+        <div>
+          <h3>Edge first, by design</h3>
+          <p>Edge ships pre-installed on most Windows PCs, so there's nothing extra to download — Sentryl is one click away from the moment it's needed. Support for other Chromium-based browsers is planned after early access.</p>
+        </div>
+        <div class="stat">
+          <b>Edge</b>
+          <span>ADD-ONS STORE ONLY</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-section" id="cta">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="text-reveal">Your inbox already has enough happening.</h2>
+        <p>Add Sentryl and see what's actually inside the next email you open.</p>
+        <a href="#" class="btn-primary" style="text-decoration:none;">Add to Microsoft Edge — Free</a>
+        <div class="cta-note">store link goes live at launch · available on Microsoft Edge Add-ons</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container footer-row">
+    <div class="footer-brand">
+      <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M16 3 27 8v9c0 8-5 12.5-11 13-6-.5-11-5-11-13V8L16 3Z" stroke="#94a3b5" stroke-width="1.6"/></svg>
+      Sentryl — see what's hiding in your inbox
+    </div>
+    <div class="footer-links">
+      <a href="#permissions">Privacy</a>
+      <a href="#terms">Terms</a>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- wrap text into per-character spans for the typewriter reveal ---- */
+  function wrapChars(el){
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const frag = document.createDocumentFragment();
+      [...node.textContent].forEach(ch => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = ch;
+        frag.appendChild(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  document.querySelectorAll('.text-reveal').forEach(el => wrapChars(el));
+
+  /* ---- type out an element's characters in sequence, with a moving cursor ---- */
+  function typeEl(el, charDelay){
+    charDelay = charDelay || 20;
+    const chars = Array.from(el.querySelectorAll('.char'));
+    if (reducedMotion) {
+      chars.forEach(c => c.classList.add('visible'));
+      return;
+    }
+    chars.forEach((c, i) => {
+      setTimeout(() => {
+        if (i > 0) chars[i - 1].classList.remove('cursor');
+        c.classList.add('visible', 'cursor');
+      }, i * charDelay);
+    });
+    setTimeout(() => {
+      const last = chars[chars.length - 1];
+      if (!last) return;
+      last.classList.add('blink');
+      setTimeout(() => last.classList.remove('cursor', 'blink'), 4800);
+    }, chars.length * charDelay);
+  }
+
+  /* ---- instrument-panel corner brackets ---- */
+  document.querySelectorAll('.bracket').forEach(el => {
+    ['tl', 'tr', 'bl', 'br'].forEach(pos => {
+      const c = document.createElement('span');
+      c.className = 'corner ' + pos;
+      el.appendChild(c);
+    });
+  });
+
+  /* ---- scroll reveal ---- */
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in-view');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  /* ---- trigger the typewriter effect for section headings as they scroll in ---- */
+  const heroTitle = document.getElementById('heroTitle');
+  const typeTargets = document.querySelectorAll('.text-reveal:not(#heroTitle)');
+  const typeIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        typeEl(e.target);
+        typeIO.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  typeTargets.forEach(el => typeIO.observe(el));
+
+  /* ---- boot-sequence loader ---- */
+  const loader = document.getElementById('loader');
+  const fill = document.getElementById('loaderFill');
+  const pct = document.getElementById('loaderPct');
+  const label = document.getElementById('loaderLabel');
+  const stages = [
+    [0,   'INITIALIZING SENTRYL'],
+    [30,  'PARSING HEADERS'],
+    [62,  'CROSS-REFERENCING THREAT FEED'],
+    [90,  'RENDERING INTERFACE']
+  ];
+
+  function finishLoad(){
+    loader.classList.add('done');
+    typeEl(heroTitle, 22);
+    setTimeout(() => { loader.style.display = 'none'; }, 650);
+  }
+
+  if (reducedMotion) {
+    finishLoad();
+  } else {
+    let progress = 0;
+    const duration = 1500;
+    const start = performance.now();
+    function tick(now){
+      progress = Math.min(100, ((now - start) / duration) * 100);
+      const shown = Math.floor(progress);
+      pct.textContent = String(shown).padStart(2, '0');
+      fill.style.width = progress + '%';
+      let current = stages[0][1];
+      for (const [threshold, text] of stages) { if (progress >= threshold) current = text; }
+      if (label.textContent !== current) label.textContent = current;
+      if (progress < 100) {
+        requestAnimationFrame(tick);
+      } else {
+        setTimeout(finishLoad, 180);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+</script>
+
+</body>
+</html>
