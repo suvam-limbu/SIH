@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentryl — Forensic Threat Intelligence Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg: #0a0e14;
+    --bg-alt: #0d1320;
+    --panel: #111826;
+    --panel-2: #0d1420;
+    --border: rgba(231,238,245,0.09);
+    --border-strong: rgba(231,238,245,0.16);
+    --text: #e7eef5;
+    --muted: #94a3b5;
+    --muted-dim: #64748a;
+    --cyan: #3fe8d4;
+    --cyan-dim: rgba(63,232,212,0.14);
+    --violet: #b77cf5;
+    --violet-dim: rgba(183,124,245,0.14);
+    --danger: #ff5c6c;
+    --danger-dim: rgba(255,92,108,0.14);
+    --warn: #f5c563;
+    --warn-dim: rgba(245,197,99,0.14);
+    --radius: 14px;
+    --container: 1060px;
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3{ font-family: 'Space Grotesk', sans-serif; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  .mono{ font-family: 'JetBrains Mono', monospace; }
+
+  .bg-glow{
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(600px 400px at 15% 8%, rgba(63,232,212,0.06), transparent 60%),
+      radial-gradient(600px 500px at 90% 30%, rgba(183,124,245,0.05), transparent 60%),
+      var(--bg);
+  }
+
+  .container{ max-width: var(--container); margin: 0 auto; padding: 0 28px; }
+
+  /* Header */
+  .report-header{
+    border-bottom: 1px solid var(--border);
+    padding: 18px 0;
+    position: sticky; top: 0; background: rgba(10,14,20,0.85); backdrop-filter: blur(12px); z-index: 1000;
+  }
+  .header-row{ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .brand{ display: flex; align-items: center; gap: 10px; }
+  .brand svg{ width: 26px; height: 26px; }
+  .brand-text{ font-size: 1.15rem; font-weight: 700; }
+  .brand-sub{ font-size: 0.68rem; color: var(--cyan); letter-spacing: 0.1em; }
+
+  .header-actions{ display: flex; align-items: center; gap: 12px; }
+
+  /* Scenario switcher buttons */
+  .scenario-pills{
+    display: flex; gap: 6px; background: var(--panel); padding: 4px; border-radius: 10px; border: 1px solid var(--border);
+  }
+  .pill-btn{
+    background: transparent; border: none; color: var(--muted);
+    font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .pill-btn:hover{ color: var(--text); }
+  .pill-btn.active{ background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(63,232,212,0.3); }
+
+  .export-btn{
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--cyan), #29b8a8);
+    color: #06110f; font-weight: 600;
+    padding: 9px 18px; border-radius: 9px; font-size: 0.82rem;
+    border: none; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(63,232,212,0.25), 0 8px 20px -8px rgba(63,232,212,0.5);
+    transition: transform .15s ease;
+  }
+  .export-btn:hover{ transform: translateY(-1px); }
+
+  /* Hero Score & Summary */
+  .score-hero{
+    display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center;
+    padding: 36px 0 28px;
+  }
+  @media(max-width: 700px){ .score-hero{ grid-template-columns: 1fr; text-align: center; } }
+
+  .big-ring{ position: relative; width: 130px; height: 130px; }
+  .big-ring svg{ width: 130px; height: 130px; transform: rotate(-90deg); }
+  .big-ring .ring-bg{ fill: none; stroke: var(--border); stroke-width: 9; }
+  .big-ring .ring-fg{
+    fill: none; stroke-width: 9; stroke-linecap: round;
+    stroke-dasharray: 377; stroke-dashoffset: 377;
+    transition: stroke-dashoffset 0.8s cubic-bezier(.16,1,.3,1);
+  }
+  .big-ring .ring-fg.danger{ stroke: var(--danger); filter: drop-shadow(0 0 10px rgba(255,92,108,0.5)); }
+  .big-ring .ring-fg.warn{ stroke: var(--warn); filter: drop-shadow(0 0 10px rgba(245,197,99,0.5)); }
+  .big-ring .ring-fg.safe{ stroke: var(--cyan); filter: drop-shadow(0 0 10px rgba(63,232,212,0.5)); }
+
+  .big-ring .label{
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .big-ring .score-val{ font-family: 'Space Grotesk'; font-size: 2.6rem; font-weight: 700; line-height: 1; }
+  .big-ring .score-val.danger{ color: var(--danger); }
+  .big-ring .score-val.warn{ color: var(--warn); }
+  .big-ring .score-val.safe{ color: var(--cyan); }
+  .big-ring .score-max{ font-size: 0.65rem; color: var(--muted-dim); margin-top: 3px; }
+
+  .score-info h1{ font-size: 1.5rem; margin-bottom: 6px; }
+  .score-info .tag{
+    display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 5px; margin-bottom: 10px;
+  }
+  .score-info .tag.danger{ color: var(--danger); background: var(--danger-dim); border: 1px solid rgba(255,92,108,0.3); }
+  .score-info .tag.warn{ color: var(--warn); background: var(--warn-dim); border: 1px solid rgba(245,197,99,0.3); }
+  .score-info .tag.safe{ color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(63,232,212,0.3); }
+  .score-info p{ color: var(--muted); font-size: 0.92rem; margin: 0; }
+
+  /* Metadata Panel */
+  .meta-grid{
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;
+  }
+  @media(max-width: 768px){ .meta-grid{ grid-template-columns: repeat(2, 1fr); } }
+  .meta-card{
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px;
+  }
+  .meta-card .meta-label{ font-size: 0.66rem; color: var(--muted-dim); text-transform: uppercase; letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  .meta-card .meta-val{ font-size: 0.92rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Section Layout */
+  .grid-two{ display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; margin-bottom: 28px; }
+  @media(max-width: 860px){ .grid-two{ grid-template-columns: 1fr; } }
+
+  .section-title{
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cyan); font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 14px;
+  }
+  .section-title::before{ content: ""; width: 14px; height: 1px; background: var(--cyan); }
+
+  /* Checks Grid */
+  .checks-list{ display: flex; flex-direction: column; gap: 10px; }
+  .check-card{
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .check-badge{
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .check-badge svg{ width: 13px; height: 13px; }
+  .check-badge.fail{ background: var(--danger-dim); color: var(--danger); }
+  .check-badge.warn{ background: var(--warn-dim); color: var(--warn); }
+  .check-badge.pass{ background: var(--cyan-dim); color: var(--cyan); }
+  .check-card h3{ font-size: 0.88rem; margin-bottom: 3px; }
+  .check-card p{ color: var(--muted); font-size: 0.80rem; margin: 0; line-height: 1.4; }
+
+  /* Map Container */
+  .map-box{
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; height: 320px;
+  }
+  #geoMap{ width: 100%; height: 100%; }
+  .leaflet-tile-pane{ filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.8); }
+
+  .geo-stat-row{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px;
+  }
+  .geo-stat{
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  }
+  .geo-stat .l{ font-size: 0.62rem; color: var(--muted-dim); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .geo-stat .v{ font-size: 0.88rem; font-weight: 600; margin-top: 2px; }
+
+  /* Relay Path */
+  .relay-box{
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 32px;
+  }
+  .relay-step{
+    display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .relay-step:last-child{ border-bottom: none; }
+  .hop-tag{
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--violet-dim); color: var(--violet);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .hop-ip{ font-family: 'JetBrains Mono', monospace; color: var(--cyan); }
+  .hop-host{ color: var(--muted); margin-left: auto; font-size: 0.76rem; }
+
+  /* Print Styles */
+  @media print{
+    body{ background: #ffffff; color: #000000; }
+    .bg-glow, .scenario-pills, .export-btn{ display: none !important; }
+    .check-card, .meta-card, .geo-stat, .relay-box{ border: 1px solid #ddd; background: #fafafa; color: #111; }
+    .score-info p, .check-card p{ color: #444; }
+  }
+
+  footer{
+    border-top: 1px solid var(--border);
+    padding: 24px 0 36px;
+    text-align: center; font-size: 0.76rem; color: var(--muted-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<header class="report-header">
+  <div class="container header-row">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M16 3 27 8v9c0 8-5 12.5-11 13-6-.5-11-5-11-13V8L16 3Z" stroke="#3fe8d4" stroke-width="2"/><path d="M9 16h14" stroke="#3fe8d4" stroke-width="2" opacity="0.6"/><circle cx="9" cy="16" r="1.5" fill="#3fe8d4"/></svg>
+      <div>
+        <div class="brand-text">Sentryl</div>
+        <div class="brand-sub mono">FORENSIC INTELLIGENCE PLATFORM</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="scenario-pills">
+        <button class="pill-btn active" data-scenario="paypal_phish">🚨 PayPal</button>
+        <button class="pill-btn" data-scenario="bec_wire">⚠️ BEC Wire</button>
+        <button class="pill-btn" data-scenario="ms365_creds">🔑 M365</button>
+        <button class="pill-btn" data-scenario="legit_google">🛡️ Google</button>
+      </div>
+
+      <button class="export-btn" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        PDF Report
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- Score Hero -->
+  <div class="score-hero">
+    <div class="big-ring">
+      <svg viewBox="0 0 130 130">
+        <circle class="ring-bg" cx="65" cy="65" r="56"/>
+        <circle class="ring-fg" id="bigRingFg" cx="65" cy="65" r="56"/>
+      </svg>
+      <div class="label">
+        <div class="score-val" id="scoreVal">—</div>
+        <div class="score-max mono">/ 100</div>
+      </div>
+    </div>
+    <div class="score-info">
+      <span class="tag" id="threatTag">ANALYZING</span>
+      <h1 id="threatHeadline">AI Forensic Email Analysis</h1>
+      <p id="threatSummary">Evaluating sender reputation, spoof heuristics, header relay chain, and geolocation telemetry.</p>
+    </div>
+  </div>
+
+  <!-- Email Metadata Bar -->
+  <div class="meta-grid">
+    <div class="meta-card">
+      <div class="meta-label">Claimed Sender</div>
+      <div class="meta-val" id="metaSender">—</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Subject Line</div>
+      <div class="meta-val" id="metaSubject">—</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Originating Node</div>
+      <div class="meta-val mono" id="metaOriginIP">—</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Forensic Classification</div>
+      <div class="meta-val" id="metaClassification">—</div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="grid-two">
+    <!-- Left: Indicator Checks -->
+    <div>
+      <div class="section-title">Forensic Indicator Checks</div>
+      <div class="checks-list" id="checksList"></div>
+    </div>
+
+    <!-- Right: Origin Geolocation -->
+    <div>
+      <div class="section-title">Origin Infrastructure Geolocation</div>
+      <div class="map-box">
+        <div id="geoMap"></div>
+      </div>
+      <div class="geo-stat-row">
+        <div class="geo-stat">
+          <div class="l">Country / City</div>
+          <div class="v" id="geoLoc">—</div>
+        </div>
+        <div class="geo-stat">
+          <div class="l">ISP / ASN Host</div>
+          <div class="v" id="geoISP">—</div>
+        </div>
+        <div class="geo-stat">
+          <div class="l">Anonymizer</div>
+          <div class="v" id="geoAnon">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SMTP Relay Path -->
+  <div class="section-title">SMTP Mail Routing & Relay Path Trace</div>
+  <div class="relay-box" id="relayBox"></div>
+
+</main>
+
+<footer>
+  <div class="container">
+    Sentryl AI Platform · Problem Statement 26106 · AICTE Cyber Security Cell · <span id="footerDate"></span>
+  </div>
+</footer>
+
+<script src="../engine/detector.js"></script>
+<script src="../engine/simulation.js"></script>
+<script>
+  let map = null;
+  let marker = null;
+  const detector = new SentrylDetector();
+
+  function initMap(lat, lon, ip, locationText) {
+    setTimeout(() => {
+      if (!map) {
+        map = L.map('geoMap', { center: [lat, lon], zoom: 4, zoomControl: false, attributionControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      } else {
+        map.setView([lat, lon], 4);
+        if (marker) map.removeLayer(marker);
+      }
+
+      marker = L.circleMarker([lat, lon], {
+        radius: 11,
+        color: '#ff5c6c',
+        fillColor: '#ff5c6c',
+        fillOpacity: 0.35,
+        weight: 2
+      }).addTo(map);
+
+      marker.bindPopup(`<b>${ip}</b><br>${locationText}`).openPopup();
+      map.invalidateSize();
+    }, 150);
+  }
+
+  function displayScanData(scan, email) {
+    const score = scan.risk_score;
+    const level = score >= 70 ? 'danger' : score >= 40 ? 'warn' : 'safe';
+    const label = score >= 70 ? 'CRITICAL THREAT' : score >= 40 ? 'SUSPICIOUS' : 'LEGITIMATE';
+
+    // Update Ring
+    const circumference = 351; // 2 * pi * 56
+    const offset = circumference - (score / 100) * circumference;
+    const ring = document.getElementById('bigRingFg');
+    ring.className.baseVal = 'ring-fg ' + level;
+    ring.style.strokeDashoffset = offset;
+
+    document.getElementById('scoreVal').textContent = score;
+    document.getElementById('scoreVal').className = 'score-val ' + level;
+
+    document.getElementById('threatTag').textContent = label;
+    document.getElementById('threatTag').className = 'tag ' + level;
+    document.getElementById('threatHeadline').textContent = `${label} — ${email?.subject || 'Email Threat Assessment'}`;
+    document.getElementById('threatSummary').textContent = scan.summary || 'Email evaluation completed.';
+
+    // Metadata
+    document.getElementById('metaSender').textContent = email?.sender || 'Unknown Sender';
+    document.getElementById('metaSubject').textContent = email?.subject || 'No Subject';
+    document.getElementById('metaOriginIP').textContent = scan.geolocation?.ip || email?.simulatedIP || '185.220.101.42';
+    document.getElementById('metaClassification').textContent = label;
+
+    // Checks
+    const list = document.getElementById('checksList');
+    list.innerHTML = '';
+    const iconMap = {
+      fail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+      warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>',
+      pass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>'
+    };
+
+    scan.checks.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'check-card';
+      card.innerHTML = `
+        <div class="check-badge ${c.status}">${iconMap[c.status] || ''}</div>
+        <div>
+          <h3>${c.name}</h3>
+          <p>${c.detail}</p>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+
+    // Geolocation
+    const geo = scan.geolocation;
+    if (geo) {
+      document.getElementById('geoLoc').textContent = `${geo.city || 'Frankfurt'}, ${geo.country || 'Germany'}`;
+      document.getElementById('geoISP').textContent = geo.isp || 'Hetzner Online';
+      document.getElementById('geoAnon').textContent = geo.is_tor ? 'TOR Exit Node' : geo.is_vpn ? 'VPN / Proxy' : 'None (Direct)';
+      initMap(geo.lat || 50.1109, geo.lon || 8.6821, geo.ip || '185.220.101.42', `${geo.city || 'Frankfurt'}, ${geo.country || 'Germany'}`);
+    }
+
+    // Relay path
+    const relayBox = document.getElementById('relayBox');
+    const relayHops = scan.relay_path || [
+      { hop: 1, ip: geo?.ip || '185.220.101.42', host: 'mail-outbound.relay-node.net' },
+      { hop: 2, ip: '74.125.82.51', host: 'mx-in.google.com' },
+      { hop: 3, ip: '142.250.152.27', host: 'mail-frontend.internal' }
+    ];
+
+    relayBox.innerHTML = relayHops.map(h => `
+      <div class="relay-step">
+        <div class="hop-tag">#${h.hop}</div>
+        <span class="hop-ip mono">${h.ip}</span>
+        <span class="hop-host">${h.host}</span>
+      </div>
+    `).join('');
+  }
+
+  async function renderScenario(key) {
+    const scenario = SENTRYL_SCENARIOS[key];
+    if (!scenario) return;
+
+    const emailData = {
+      sender: scenario.sender,
+      senderName: scenario.senderName,
+      subject: scenario.subject,
+      body: scenario.body,
+      urls: scenario.urls,
+      replyTo: scenario.replyTo,
+      headers: scenario.headers,
+      simulatedIP: scenario.simulatedIP,
+      geolocation: scenario.geolocation
+    };
+
+    const scan = await detector.scan(emailData);
+    displayScanData(scan, emailData);
+  }
+
+  // Handle scenario pills
+  document.querySelectorAll('.pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const key = btn.getAttribute('data-scenario');
+      renderScenario(key);
+    });
+  });
+
+  document.getElementById('footerDate').textContent = new Date().toLocaleDateString();
+
+  // Load initial from storage or fallback to PayPal phish
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['lastScan', 'lastEmail'], (items) => {
+      if (items.lastScan && items.lastEmail) {
+        displayScanData(items.lastScan, items.lastEmail);
+      } else {
+        renderScenario('paypal_phish');
+      }
+    });
+  } else {
+    renderScenario('paypal_phish');
+  }
+</script>
+</body>
+</html>

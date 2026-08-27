@@ -1,0 +1,346 @@
+/* ==========================================================
+   SENTRYL — In-Gmail Floating Bar & Risk Banner Styles
+   ========================================================== */
+
+/* Floating Bar at bottom right */
+#sentryl-floating-bar {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 999999;
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: sentryl-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sentryl-pop {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sentryl-float-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0d1420;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(63, 232, 212, 0.3);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.6), 0 0 16px rgba(63, 232, 212, 0.15);
+}
+
+.sentryl-float-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sentryl-float-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.sentryl-float-title {
+  color: #3fe8d4;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.sentryl-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #3fe8d4, #22b5a5);
+  color: #06110f;
+  font-weight: 600;
+  font-size: 12px;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sentryl-btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(63, 232, 212, 0.4);
+}
+
+.sentryl-btn-secondary {
+  background: rgba(183, 124, 245, 0.15);
+  color: #d8b8ff;
+  border: 1px solid rgba(183, 124, 245, 0.35);
+  font-weight: 600;
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sentryl-btn-secondary:hover {
+  background: rgba(183, 124, 245, 0.25);
+  border-color: #b77cf5;
+}
+
+.sentryl-btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9d5e4;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.sentryl-btn-ghost:hover {
+  color: #3fe8d4;
+  border-color: #3fe8d4;
+}
+
+/* Simulation dropdown menu */
+.sentryl-sim-dropdown {
+  position: relative;
+}
+
+.sentryl-sim-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  width: 250px;
+  background: #111826;
+  border: 1px solid rgba(231, 238, 245, 0.15);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sentryl-sim-menu.show {
+  display: flex;
+}
+
+.sentryl-sim-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b5;
+  padding: 6px 8px 4px;
+  letter-spacing: 0.05em;
+}
+
+.sentryl-sim-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sentryl-sim-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.sentryl-sim-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sentryl-sim-tag.danger {
+  background: rgba(255, 92, 108, 0.18);
+  color: #ff5c6c;
+  border: 1px solid rgba(255, 92, 108, 0.35);
+}
+
+.sentryl-sim-tag.warn {
+  background: rgba(245, 197, 99, 0.18);
+  color: #f5c563;
+  border: 1px solid rgba(245, 197, 99, 0.35);
+}
+
+.sentryl-sim-tag.safe {
+  background: rgba(63, 232, 212, 0.18);
+  color: #3fe8d4;
+  border: 1px solid rgba(63, 232, 212, 0.35);
+}
+
+.sentryl-sim-name {
+  font-size: 12px;
+  color: #e7eef5;
+  font-weight: 500;
+}
+
+/* ==========================================================
+   INLINE RISK BANNER (Inserted directly into Gmail email)
+   ========================================================== */
+
+.sentryl-injected-banner {
+  margin: 14px 0 18px 0;
+  padding: 16px 18px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  animation: sentryl-slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sentryl-slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sentryl-injected-banner.danger {
+  background: #1a0f14;
+  border: 1px solid rgba(255, 92, 108, 0.4);
+  box-shadow: 0 8px 24px -6px rgba(255, 92, 108, 0.15);
+}
+
+.sentryl-injected-banner.warn {
+  background: #1a160d;
+  border: 1px solid rgba(245, 197, 99, 0.4);
+}
+
+.sentryl-injected-banner.safe {
+  background: #0a1818;
+  border: 1px solid rgba(63, 232, 212, 0.4);
+}
+
+.sentryl-banner-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sentryl-banner-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.sentryl-banner-score.danger {
+  background: rgba(255, 92, 108, 0.15);
+  border: 1px solid rgba(255, 92, 108, 0.4);
+  color: #ff5c6c;
+}
+
+.sentryl-banner-score.warn {
+  background: rgba(245, 197, 99, 0.15);
+  border: 1px solid rgba(245, 197, 99, 0.4);
+  color: #f5c563;
+}
+
+.sentryl-banner-score.safe {
+  background: rgba(63, 232, 212, 0.15);
+  border: 1px solid rgba(63, 232, 212, 0.4);
+  color: #3fe8d4;
+}
+
+.sentryl-score-val {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sentryl-score-label {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.8;
+  margin-top: 3px;
+}
+
+.sentryl-banner-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sentryl-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.sentryl-banner-title.danger { color: #ff808e; }
+.sentryl-banner-title.warn { color: #f7d27e; }
+.sentryl-banner-title.safe { color: #58ebd9; }
+
+.sentryl-banner-desc {
+  font-size: 13px;
+  color: #c9d5e4;
+  line-height: 1.4;
+}
+
+.sentryl-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sentryl-view-report-btn {
+  background: #111826;
+  border: 1px solid rgba(63, 232, 212, 0.4);
+  color: #3fe8d4;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sentryl-view-report-btn:hover {
+  background: rgba(63, 232, 212, 0.15);
+  border-color: #3fe8d4;
+}
+
+.sentryl-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b5;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.sentryl-close-btn:hover {
+  color: #ffffff;
+}
+
+.sentryl-banner-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sentryl-mini-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sentryl-mini-check.fail { color: #ff7b88; }
+.sentryl-mini-check.warn { color: #f5c563; }
+.sentryl-mini-check.pass { color: #3fe8d4; }
